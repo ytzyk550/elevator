@@ -9,7 +9,7 @@ class ElevatorChallenge {
 
     // Initialize buildings
     init() {
-        for (var i = 0; i < this.sumBuildings; i++) {
+        for (let i = 0; i < this.sumBuildings; i++) {
             this.buildings.push(new Building(i+1))
         }
     }
@@ -17,7 +17,7 @@ class ElevatorChallenge {
 
 class Building {
     
-    // Object to hold the elevators arival statuses
+    // Object to hold the elevators arrival statuses
     elevatorQueues = {}
     
     constructor(buildingId) {
@@ -27,14 +27,16 @@ class Building {
         this.init()
     }
 
+/////////////// Initializers ///////////////////
+
     // Initialize the building
     init() {
         this.createBuilding(this.sumFloors)
         this.createElevators(this.sumElevators)
     }
 
-    
-    createBuilding(floors) {
+    // Build the UI for the building
+    createBuilding(floors = this.sumFloors) {
         let buildingArea = $('<div/>', {
                 class: 'buildingArea'
         })
@@ -53,8 +55,8 @@ class Building {
         this.createFloors(floors)
     }
 
-
-    createFloors(floors) {
+    // Build the UI for the floors, with building-id
+    createFloors(floors = this.sumFloors) {
         for (let i = floors; i >= 0; i--) {
             let floor = $('<div/>', {
                 class: 'floor',
@@ -76,7 +78,8 @@ class Building {
         }
     }
 
-    createElevators(elevators) {
+    // Build the UI for the elevators, with building-id
+    createElevators(elevators = this.sumElevators) {
         for (let i = 1; i <= elevators; i++) {
             this.elevatorQueues[i] = {floor: 0, isFreeOn: new Date(new Date().getTime())}
             $('<img/>', {
@@ -88,28 +91,40 @@ class Building {
         }
     }
 
-    getFastesWay(floor) {
-        let queues = {}
+/////////////////// Actions /////////////////////
+
+    // User clicked on the floor-button.
+    callElevatorToFloor(floor = 0) {
+
+        // Calculate fastest way and call elevator, then update the wait time view on floor
+        let way = this.getFastestWay(floor)
+        this.updateWaitTime(floor, way.arrivalTime)
+        this.moveElevatorToFloor(floor, way.speed, way.elevator)
+    }
+
+    // Find an elevator that will arrive the fastest.
+    getFastestWay(floor = 0) {
+        const queues = {}
         let currentTime = new Date().getTime()
         let waitTime = 2000
 
+        //for each elevator find the arrival time if you choose it.
         Object.keys(this.elevatorQueues).forEach((k) => {
             let queue = this.elevatorQueues[k]
             let isFreeOn = (queue.isFreeOn > currentTime)? queue.isFreeOn : currentTime
-            let elevatorToFloor = this.calculatArivalTime(queue.floor, floor)
+            let elevatorToFloor = this.calculatArrivalTime(queue.floor, floor)
             queues[k] = isFreeOn + elevatorToFloor
         })
         
         let key = Object.keys(queues).reduce((key, v) => queues[v] < queues[key] ? v : key);
+        let speed = this.calculatArrivalTime(this.elevatorQueues[key].floor, floor)
         this.elevatorQueues[key]={ floor: floor, isFreeOn: queues[key]+waitTime }
 
-        let speed = this.calculatArivalTime(this.elevatorQueues[key].floor, floor)
-
-        return { elevator: key, speed: speed, arivalTime: queues[key] }
+        return { elevator: key, speed: speed, arrivalTime: queues[key] }
     }
 
-    
-    calculatArivalTime(currentFloor, floor) {
+    // Calculate the arrival time from current-floor to required floor.
+    calculatArrivalTime(currentFloor = 0, floor = 0) {
         let speed =  0
         if (currentFloor <= floor) {
             speed = (floor - currentFloor) * 500
@@ -119,59 +134,46 @@ class Building {
         return speed
     }
 
+    // Move elevator to floor
+    moveElevatorToFloor(floor = 0, speed = 0, elevatorId = 1) {
+        $(`#elevator-${this.buildingId}-${elevatorId}`)
+            .animate({ bottom: (110 * floor).toString() + 'px' }, speed)
+            .delay(2000);
+    }
 
-  
-    
-    startTimer(timer, display) {
-        
+    // Display elevator arrival time on the given floor.
+    startTimer(timer = 0, display) {
+
         display.text(timer);
-
         let interval = setInterval(() => {
-            
             if (--timer < 0) {
                 clearInterval(interval)
             } else {
-            display.text(timer);
+                display.text(timer);
             }
         }, 1000);
     }
 
-
-
-    changeButtonColorOnWait(floor, timeout) {
+    // Change the button to green on waiting.
+    changeButtonColorOnWait(floor = 0, timeout = 0) {
         let buttonElement = $(`div#floor-${this.buildingId}-${floor.toString()} > button.metal.linear`)
         buttonElement.addClass('waiting')
+       
         setTimeout(() => {
             playSound()
             buttonElement.removeClass('waiting')     
         }, timeout*1000);
     }
 
-    updateWaitTime(floor, time) {
+    // DownCount until the elevator arrived.
+    updateWaitTime(floor = 0, time) {
         let currentTime = new Date().getTime()
-        let timer = Math.ceil((time - currentTime) / 1000)
+        let timer = Math.floor((time - currentTime) / 1000)
+        let display = $(`div#floor-${this.buildingId}-${floor.toString()} > span.waittime`)
         
         this.changeButtonColorOnWait(floor, timer)
-
-        let display = $(`div#floor-${this.buildingId}-${floor.toString()} > span.waittime`)
-    this.startTimer(timer, display);
-
+        this.startTimer(timer, display);
     }
-
-    callElevatorToFloor(floor) {
-        let way = this.getFastesWay(floor)
-        this.updateWaitTime(floor, way.arivalTime)
-        this.moveElevatorToFloor(floor, way.speed, way.elevator)
-    }
-
-
-    moveElevatorToFloor(floor, speed, elevatorId) {
-        $(`#elevator-${this.buildingId}-${elevatorId}`)
-            .animate({ bottom: (110 * floor).toString() + 'px' }, speed)
-            .delay(2000);
-    }
-
-    
 
 }
 
