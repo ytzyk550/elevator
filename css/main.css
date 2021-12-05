@@ -1,0 +1,61 @@
+﻿.blackline {
+  height: 7px;
+  background-color: #000000;
+}
+
+.waittime {
+  height: 30px;
+  width: 50px;
+  background-color: #ffffff;
+  position: absolute;
+  margin: 30px auto auto 20px;
+}
+
+.buildings {
+  /* position: relative; */
+  height: 100%;
+  /* overflow: auto; */
+  display: flex;
+  /* flex: 1; */
+}
+
+.buildingArea {
+  height: auto;
+  margin-right: 600px;
+  /* display: flex; */
+
+  position: relative;
+  /* position: absolute; */
+}
+
+.building {
+  width: 300px;
+  /* position: absolute; */
+  /* display: inline-block; */
+  bottom: 0;
+  left: 0;
+}
+
+.elevators {
+  width: 300px;
+  position: absolute;
+  display: inline-block;
+
+  /* margin-left: 300px; */
+  bottom: 0;
+  /* left: 300px; */
+}
+
+.elevator {
+  position: absolute;
+  bottom: 0;
+
+  height: 110px;
+  width: auto;
+}
+
+.container {
+  position: relative;
+  height: auto;
+  overflow: scroll;
+}
