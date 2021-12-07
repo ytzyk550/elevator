@@ -18,7 +18,7 @@ class ElevatorChallenge {
 class Building {
     
     // Object to hold the elevators arrival statuses
-    elevatorQueues = {}
+    elevatorsStatus = {}
     
     constructor(buildingId) {
         this.buildingId = buildingId
@@ -81,7 +81,7 @@ class Building {
     // Build the UI for the elevators, with building-id
     createElevators(elevators = this.sumElevators) {
         for (let i = 1; i <= elevators; i++) {
-            this.elevatorQueues[i] = {floor: 0, isFreeOn: new Date(new Date().getTime())}
+            this.elevatorsStatus[i] = {floor: 0, isFreeOn: new Date(new Date().getTime())}
             $('<img/>', {
                 class: 'elevator',
                 id: `elevator-${ this.buildingId}-${i}`,
@@ -99,37 +99,66 @@ class Building {
         // Calculate fastest way and call elevator, then update the wait time view on floor
         let way = this.getFastestWay(floor)
         this.updateWaitTime(floor, way.arrivalTime)
+        // Move...
         this.moveElevatorToFloor(floor, way.speed, way.elevator)
     }
 
-    // Find an elevator that will arrive the fastest.
+    // Find an elevator that will arrive the fastest, 
+    //      Returns - elevator-id, duration, and arrival-time.
     getFastestWay(floor = 0) {
-        const queues = {}
-        let currentTime = new Date().getTime()
-        let waitTime = 2000
 
-        //for each elevator find the arrival time if you choose it.
-        Object.keys(this.elevatorQueues).forEach((k) => {
-            let queue = this.elevatorQueues[k]
-            let isFreeOn = (queue.isFreeOn > currentTime)? queue.isFreeOn : currentTime
-            let elevatorToFloor = this.calculatArrivalTime(queue.floor, floor)
-            queues[k] = isFreeOn + elevatorToFloor
-        })
+        // Find fastest elevator.
+        const elevatorsArrivalTimes = this.getElevatorsArrivalTimes(floor)
+        const fastestElevator = this.getFastestElevatorName( elevatorsArrivalTimes )
+        const fastestElevatorTime = elevatorsArrivalTimes[fastestElevator]
+        const duration = this.calculatDuration(this.elevatorsStatus[fastestElevator].floor, floor)
         
-        let key = Object.keys(queues).reduce((key, v) => queues[v] < queues[key] ? v : key);
-        let speed = this.calculatArrivalTime(this.elevatorQueues[key].floor, floor)
-        this.elevatorQueues[key]={ floor: floor, isFreeOn: queues[key]+waitTime }
-
-        return { elevator: key, speed: speed, arrivalTime: queues[key] }
+        // Update the elevator status.
+        const waitTime = 2000
+        this.elevatorsStatus[fastestElevator] = { floor: floor, isFreeOn: fastestElevatorTime + waitTime }
+        
+        return { elevator: fastestElevator, speed: duration, arrivalTime: fastestElevatorTime }
     }
 
-    // Calculate the arrival time from current-floor to required floor.
-    calculatArrivalTime(currentFloor = 0, floor = 0) {
+    // Returns object with arrival time of each elevator to given floor.
+    getElevatorsArrivalTimes(floor = 0) {
+        const elevatorsArrivalTimes = {}
+        const currentTime = new Date().getTime()
+
+        //For each elevator find the arrival time if selected.
+        Object.keys(this.elevatorsStatus).forEach((k) => {
+            const elevator = this.elevatorsStatus[k]
+            const isFreeOn = (elevator.isFreeOn > currentTime) ? elevator.isFreeOn : currentTime
+            
+            let duration = this.calculatDuration(elevator.floor, floor)
+            elevatorsArrivalTimes[k] = isFreeOn + duration
+        })
+        return elevatorsArrivalTimes
+    }
+
+    // Get the name of the fastest elevator
+    getFastestElevatorName(elevatorsArrivalTimes) {
+        
+        // (Callback) Compare elevators arrival time, return the name of the fastest elevator.
+        const getMinTime = (prevElevator, curElevator) =>{
+            if (elevatorsArrivalTimes[curElevator] < elevatorsArrivalTimes[prevElevator]) {
+                return curElevator
+            }
+            return prevElevator
+        }
+        // Compare all elevators, return the name of the fastest.
+        let fastestElevatorName = Object.keys(elevatorsArrivalTimes).reduce(getMinTime);
+        return fastestElevatorName
+    }
+
+    // Calculate the travel time from the current floor to the required floor.
+    calculatDuration(currentFloor = 0, floor = 0) {
+        const floorSpeed = 500
         let speed =  0
         if (currentFloor <= floor) {
-            speed = (floor - currentFloor) * 500
+            speed = (floor - currentFloor) * floorSpeed
         } else {
-            speed = (currentFloor - floor) * 500
+            speed = (currentFloor - floor) * floorSpeed
         }
         return speed
     }
@@ -180,6 +209,6 @@ class Building {
 
 // helper functions
 function playSound() {
-        const audio = new Audio('./assets/ding.mp3');
-        audio.play()
-    }
+    const audio = new Audio('./assets/ding.mp3');
+    audio.play()
+}
